@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT
+config SHIELD_RK_75
+    bool "RK_75 keyboard"
+    depends on SHIELD_NICE_NANO_V2
+    select ZMK_KEYBOARD
+    help
+      Enable support for the RK_75 keyboard using MCP23017 expander.
