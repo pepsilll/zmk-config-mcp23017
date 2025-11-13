@@ -6,14 +6,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: zmkfirmware/zmk-build-arm:4.1  # ✅ 最新公开镜像
-    name: Build
+      image: zmkfirmware/zmk-build-arm:4.1  # ✅ 最新稳定构建环境
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 缓存 Zephyr + ZMK 模块
       - name: Cache Zephyr modules
         id: cache-zephyr
         uses: actions/cache@v4
@@ -28,32 +26,31 @@ jobs:
           restore-keys: |
             zephyr-${{ runner.os }}-
 
-      # 初始化 west
       - name: Initialize west
         run: |
           west init -l config
 
-      # 仅在缓存未命中时运行 west update
       - name: Update modules (only if needed)
         if: steps.cache-zephyr.outputs.cache-hit != 'true'
         run: |
           echo "Cache miss: running west update..."
           west update
 
-      # 缓存命中时打印提示（替代 else）
       - name: Skip west update (cache hit)
         if: steps.cache-zephyr.outputs.cache-hit == 'true'
-        run: echo "Cache hit: skipping west update."
+        run: |
+          echo "Cache hit: skipping west update."
 
       - name: Export Zephyr
-        run: west zephyr-export
+        run: |
+          west zephyr-export
 
       - name: Build firmware
         run: |
-          echo "Building firmware for nice_nano_v2 + rk_75"
+          echo "Building firmware for nice_nano_v2 + rk_75..."
           west build -s zmk/app -b nice_nano_v2 -- -DSHIELD=rk_75 -DZMK_CONFIG="${GITHUB_WORKSPACE}/config"
 
-      - name: Upload artifact
+      - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
           name: rk_75_nice_nano_v2.uf2
