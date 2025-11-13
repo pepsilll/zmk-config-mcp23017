@@ -28,7 +28,7 @@ jobs:
           restore-keys: |
             zephyr-${{ runner.os }}-
 
-      # 初始化 west 但不重复下载
+      # 初始化 west
       - name: Initialize west
         run: |
           west init -l config
@@ -39,8 +39,11 @@ jobs:
         run: |
           echo "Cache miss: running west update..."
           west update
-        else:
-          echo "Cache hit: skipping west update"
+
+      # 缓存命中时打印提示（替代 else）
+      - name: Skip west update (cache hit)
+        if: steps.cache-zephyr.outputs.cache-hit == 'true'
+        run: echo "Cache hit: skipping west update."
 
       - name: Export Zephyr
         run: west zephyr-export
