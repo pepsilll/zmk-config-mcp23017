@@ -1,0 +1,28 @@
+#include <behaviors.dtsi>
+#include <dt-bindings/zmk/keys.h>
+#include <dt-bindings/zmk/bt.h>
+
+/ {
+    keymap {
+        compatible = "zmk,keymap";
+
+        // 默认图层
+        default_layer {
+            // 6 行, 15 列
+            bindings = <
+    // Col 0     Col 1     Col 2     Col 3     Col 4     Col 5     Col 6     Col 7     Col 8     Col 9     Col 10    Col 11    Col 12    Col 13    Col 14
+    &kp ESC     &kp F1    &kp F2    &kp F3    &kp F4    &kp F5    &kp F6    &kp F7    &kp F8    &kp F9    &kp F10   &kp F11   &kp F12   &kp PSCRN &kp DEL    // Row 0
+    &kp GRAVE   &kp N1    &kp N2    &kp N3    &kp N4    &kp N5    &kp N6    &kp N7    &kp N8    &kp N9    &kp N0    &kp MINUS &kp EQUAL &kp BSPC  &kp HOME   // Row 1
+    &kp TAB     &kp Q     &kp W     &kp E     &kp R     &kp T     &kp Y     &kp U     &kp I     &kp O     &kp P     &kp LBKT  &kp RBKT  &kp BSLH  &kp PG_UP  // Row 2
+    &kp CAPS    &kp A     &kp S     &kp D     &kp F     &kp G     &kp H     &kp J     &kp K     &kp L     &kp SEMI  &kp SQT   &kp RET   &kp ENTER &kp PG_DN  // Row 3
+    &kp LSHFT   &kp Z     &kp X     &kp C     &kp V     &kp B     &kp N     &kp M     &kp COMMA &kp DOT   &kp FSLH  &kp RSHFT &kp UP    &kp DOWN  &kp END    // Row 4
+    &kp LCTRL   &kp LGUI  &kp LALT  &none     &none     &kp SPACE &none     &none     &none     &kp RALT  &kp RCTRL &none     &kp LEFT  &kp DOWN  &kp RIGHT  // Row 5
+            >;
+        };
+
+        // 在此添加更多图层, 例如:
+        // raise_layer {
+        //     bindings = < ... >;
+        // };
+    };
+};
