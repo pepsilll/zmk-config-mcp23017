@@ -1,4 +1,4 @@
-name: Build
+name: Build ZMK firmware (fast build)
 
 on: [push, pull_request, workflow_dispatch]
 
@@ -6,35 +6,41 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: zmkfirmware/zmk-build-arm:4.1  # ✅ 最新公开镜像 tag
+      image: zmkfirmware/zmk-build-arm:4.1  # ✅ 最新公开镜像
     name: Build
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4  # ✅ 升级版本
+        uses: actions/checkout@v4
 
-      - name: Cache west modules
-        uses: actions/cache@v4  # ✅ 使用新版 cache action
-        env:
-          cache-name: cache-zephyr-modules
+      # 缓存 Zephyr + ZMK 模块
+      - name: Cache Zephyr modules
+        id: cache-zephyr
+        uses: actions/cache@v4
         with:
           path: |
+            zephyr/
             modules/
             tools/
-            zephyr/
             bootloader/
             zmk/
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('manifest-dir/west.yml') }}
+          key: zephyr-${{ runner.os }}-${{ hashFiles('manifest-dir/west.yml') }}
           restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
+            zephyr-${{ runner.os }}-
 
-      - name: Initialize West
-        run: west init -l config
+      # 初始化 west 但不重复下载
+      - name: Initialize west
+        run: |
+          west init -l config
 
-      - name: Update modules
-        run: west update
+      # 仅在缓存未命中时运行 west update
+      - name: Update modules (only if needed)
+        if: steps.cache-zephyr.outputs.cache-hit != 'true'
+        run: |
+          echo "Cache miss: running west update..."
+          west update
+        else:
+          echo "Cache hit: skipping west update"
 
       - name: Export Zephyr
         run: west zephyr-export
@@ -44,18 +50,8 @@ jobs:
           echo "Building firmware for nice_nano_v2 + rk_75"
           west build -s zmk/app -b nice_nano_v2 -- -DSHIELD=rk_75 -DZMK_CONFIG="${GITHUB_WORKSPACE}/config"
 
-      - name: Show DTS file
-        if: ${{ always() }}
-        run: cat -n build/zephyr/nice_nano_v2.dts.pre.tmp || echo "No DTS file found"
-
-      - name: Show Kconfig file
-        run: cat build/zephyr/.config | grep -v "^#" | grep -v "^$" || echo "No config found"
-
-      - name: Rename output
-        run: cp build/zephyr/zmk.uf2 rk_75_nice_nano_v2.uf2
-
-      - name: Upload firmware artifact
-        uses: actions/upload-artifact@v4  # ✅ 使用新版 artifact action
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
           name: rk_75_nice_nano_v2.uf2
-          path: rk_75_nice_nano_v2.uf2
+          path: build/zephyr/zmk.uf2
