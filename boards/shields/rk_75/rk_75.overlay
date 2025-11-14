@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include <dt-bindings/zmk/matrix_transform.h>
+#include <dt-bindings/gpio/gpio.h> // 推荐包含，用于 GPIO 标志
+#include <dt-bindings/i2c/i2c.h> // 推荐包含，用于 I2C_BITRATE_FAST
 
 / {
     chosen {
@@ -7,74 +9,81 @@
         zmk,matrix-transform = &matrix_transform0;
     };
 
-    /*
-     * MCP23017 I²C GPIO 扩展器定义
-     * 注意：请确认你的实际接线是在哪个 I2C 总线上
-     * nice_nano_v2 默认 I2C0 = SDA0(P0.26), SCL0(P0.27)
-     */
-    &i2c0 {
-        status = "okay";
-
-        mcp23017: mcp23017@20 {
-            compatible = "microchip,mcp23017";
-            reg = <0x20>;             /* I2C 地址：0x20 ~ 0x27 */
-            label = "MCP23017";
-            #gpio-cells = <2>;
-            gpio-controller;
-            status = "okay";
-        };
-    };
-
-    /*
-     * 使用 MCP23017 作为行列控制器
-     */
     kscan0: kscan {
         compatible = "zmk,kscan-gpio-matrix";
-        label = "KSCAN_MCP23017";
+        label = "KSCAN";
         diode-direction = "col2row";
-        wakeup-source;
 
-        /* MCP23017 引脚号从 0~15，对应 GPA0~GPA7 / GPB0~GPB7 */
-        /* 按实际接线修改 */
-        row-gpios = <&mcp23017 0 GPIO_ACTIVE_LOW>,
-                    <&mcp23017 1 GPIO_ACTIVE_LOW>,
-                    <&mcp23017 2 GPIO_ACTIVE_LOW>,
-                    <&mcp23017 3 GPIO_ACTIVE_LOW>,
-                    <&mcp23017 4 GPIO_ACTIVE_LOW>,
-                    <&mcp23017 5 GPIO_ACTIVE_LOW>;
+        /* 行 (Row) 引脚 - 保持在主控 MCU (&gpio0) 上 */
+        row-gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>,
+                    <&gpio0 8 GPIO_ACTIVE_HIGH>,
+                    <&gpio0 17 GPIO_ACTIVE_HIGH>,
+                    <&gpio0 20 GPIO_ACTIVE_HIGH>,
+                    <&gpio0 22 GPIO_ACTIVE_HIGH>,
+                    <&gpio0 24 GPIO_ACTIVE_HIGH>;
 
-        col-gpios = <&mcp23017 8  GPIO_ACTIVE_LOW>,
-                    <&mcp23017 9  GPIO_ACTIVE_LOW>,
-                    <&mcp23017 10 GPIO_ACTIVE_LOW>,
-                    <&mcp23017 11 GPIO_ACTIVE_LOW>,
-                    <&mcp23017 12 GPIO_ACTIVE_LOW>,
-                    <&mcp23017 13 GPIO_ACTIVE_LOW>,
-                    <&mcp23017 14 GPIO_ACTIVE_LOW>,
-                    <&mcp23017 15 GPIO_ACTIVE_LOW>,
-                    <&mcp23017 6  GPIO_ACTIVE_LOW>,
-                    <&mcp23017 7  GPIO_ACTIVE_LOW>,
-                    <&mcp23017 0  GPIO_ACTIVE_LOW>,
-                    <&mcp23017 1  GPIO_ACTIVE_LOW>,
-                    <&mcp23017 2  GPIO_ACTIVE_LOW>,
-                    <&mcp23017 3  GPIO_ACTIVE_LOW>,
-                    <&mcp23017 4  GPIO_ACTIVE_LOW>;
+        /*
+         * 列 (Column) 引脚 - 已根据要求修改
+         *
+         * 全部指向 I/O 扩展器 (&expander0)
+         * MCP23017 有 16 个引脚 (0-15)，这里使用了 15 个 (0-14)，
+         * 对应您原来的 15 个列定义。
+         */
+        col-gpios = <&expander0 0 GPIO_ACTIVE_HIGH>,  /* 对应原 &gpio1 0 */
+                    <&expander0 1 GPIO_ACTIVE_HIGH>,  /* 对应原 &gpio0 11 */
+                    <&expander0 2 GPIO_ACTIVE_HIGH>,  /* 对应原 &gpio1 4 */
+                    <&expander0 3 GPIO_ACTIVE_HIGH>,  /* 对应原 &gpio1 6 */
+                    <&expander0 4 GPIO_ACTIVE_HIGH>,  /* 对应原 &gpio0 31 */
+                    <&expander0 5 GPIO_ACTIVE_HIGH>,  /* 对应原 &gpio0 29 */
+                    <&expander0 6 GPIO_ACTIVE_HIGH>,  /* 对应原 &gpio0 2 */
+                    <&expander0 7 GPIO_ACTIVE_HIGH>,  /* 对应原 &gpio1 15 */
+                    <&expander0 8 GPIO_ACTIVE_HIGH>,  /* 对应原 &gpio1 13 */
+                    <&expander0 9 GPIO_ACTIVE_HIGH>,  /* 对应原 &gpio1 11 */
+                    <&expander0 10 GPIO_ACTIVE_HIGH>, /* 对应原 &gpio0 10 */
+                    <&expander0 11 GPIO_ACTIVE_HIGH>, /* 对应原 &gpio0 9 */
+                    <&expander0 12 GPIO_ACTIVE_HIGH>, /* 对应原 &gpio1 7 */
+                    <&expander0 13 GPIO_ACTIVE_HIGH>, /* 对应原 &gpio1 2 */
+                    <&expander0 14 GPIO_ACTIVE_HIGH>; /* 对应原 &gpio1 1 */
     };
 
-    /*
-     * 键盘矩阵映射（不变）
-     */
     matrix_transform0: matrix_transform {
         compatible = "zmk,matrix-transform";
         rows = <6>;
         columns = <15>;
 
+        // 按行列直通映射，可根据实际键位调整
         map = <
-            RC(0,0) RC(0,1) RC(0,2) RC(0,3) RC(0,4) RC(0,5) RC(0,6) RC(0,7) RC(0,8) RC(0,9) RC(0,10) RC(0,11) RC(0,12) RC(0,13) RC(0,14)
-            RC(1,0) RC(1,1) RC(1,2) RC(1,3) RC(1,4) RC(1,5) RC(1,6) RC(1,7) RC(1,8) RC(1,9) RC(1,10) RC(1,11) RC(1,12) RC(1,13) RC(1,14)
-            RC(2,0) RC(2,1) RC(2,2) RC(2,3) RC(2,4) RC(2,5) RC(2,6) RC(2,7) RC(2,8) RC(2,9) RC(2,10) RC(2,11) RC(2,12) RC(2,13) RC(2,14)
-            RC(3,0) RC(3,1) RC(3,2) RC(3,3) RC(3,4) RC(3,5) RC(3,6) RC(3,7) RC(3,8) RC(3,9) RC(3,10) RC(3,11) RC(3,12) RC(3,13) RC(3,14)
-            RC(4,0) RC(4,1) RC(4,2) RC(4,3) RC(4,4) RC(4,5) RC(4,6) RC(4,7) RC(4,8) RC(4,9) RC(4,10) RC(4,11) RC(4,12) RC(4,13) RC(4,14)
-            RC(5,0) RC(5,1) RC(5,2) RC(5,3) RC(5,4) RC(5,5) RC(5,6) RC(5,7) RC(5,8) RC(5,9) RC(5,10) RC(5,11) RC(5,12) RC(5,13) RC(5,14)
+            RC(0,0)  RC(0,1)  RC(0,2)  RC(0,3)  RC(0,4)  RC(0,5)  RC(0,6)  RC(0,7)  RC(0,8)  RC(0,9)  RC(0,10)  RC(0,11)  RC(0,12)  RC(0,13)  RC(0,14)
+            RC(1,0)  RC(1,1)  RC(1,2)  RC(1,3)  RC(1,4)  RC(1,5)  RC(1,6)  RC(1,7)  RC(1,8)  RC(1,9)  RC(1,10)  RC(1,11)  RC(1,12)  RC(1,13)  RC(1,14)
+            RC(2,0)  RC(2,1)  RC(2,2)  RC(2,3)  RC(2,4)  RC(2,5)  RC(2,6)  RC(2,7)  RC(2,8)  RC(2,9)  RC(2,10)  RC(2,11)  RC(2,12)  RC(2,13)  RC(2,14)
+            RC(3,0)  RC(3,1)  RC(3,2)  RC(3,3)  RC(3,4)  RC(3,5)  RC(3,6)  RC(3,7)  RC(3,8)  RC(3,9)  RC(3,10)  RC(3,11)  RC(3,12)  RC(3,13)  RC(3,14)
+            RC(4,0)  RC(4,1)  RC(4,2)  RC(4,3)  RC(4,4)  RC(4,5)  RC(4,6)  RC(4,7)  RC(4,8)  RC(4,9)  RC(4,10)  RC(4,11)  RC(4,12)  RC(4,13)  RC(4,14)
+            RC(5,0)  RC(5,1)  RC(5,2)  RC(5,3)  RC(5,4)  RC(5,5)  RC(5,6)  RC(5,7)  RC(5,8)  RC(5,9)  RC(5,10)  RC(5,11)  RC(5,12)  RC(5,13)  RC(5,14)
         >;
+    };
+};
+
+/*
+ * ======================================================================
+ * 新增: MCP23017 I/O 扩展器定义 (参考 Ferris 模板)
+ *
+ * 重要:
+ * 1. 您必须在您的主板 .dts 文件中启用一个 I2C 总线 (例如 i2c1)。
+ * 2. 这里的 "&i2c1" 和 "0x20" 是假设。
+ * - 如果您的扩展器连接到 &i2c0，请修改为 &i2c0。
+ * - 如果您的扩展器 I2C 地址不是 0x20，请修改 mcp23017@XX 和 reg = <0xXX>。
+ * ======================================================================
+ */
+&i2c1 { // 假设使用 I2C 总线 1
+    status = "okay"; // 确保 I2C 总线本身已被启用
+    clock-frequency = <I2C_BITRATE_FAST>; // 400kHz
+
+    expander0: mcp23017@20 { // 定义扩展器，I2C 地址为 0x20
+        compatible = "microchip,mcp230xx";
+        status = "okay";
+        gpio-controller; // 关键: 声明这是一个 GPIO 控制器
+        reg = <0x20>;
+        #gpio-cells = <2>;
+        ngpios = <16>;
     };
 };
