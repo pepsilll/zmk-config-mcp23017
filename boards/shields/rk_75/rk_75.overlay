@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
+
 #include <dt-bindings/zmk/matrix_transform.h>
-#include <dt-bindings/gpio/gpio.h> // 推荐包含，用于 GPIO 标志
+#include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/i2c/i2c.h> // 推荐包含，用于 I2C_BITRATE_FAST
 
 / {
@@ -15,19 +16,18 @@
         diode-direction = "col2row";
 
         /* 行 (Row) 引脚 - 保持在主控 MCU (&gpio0) 上 */
+        // 注意：这里的引脚 P0.06, P0.08, P0.17, P0.20 在 pinctrl 中被 UART0 和 I2C0 占用。
+        // 如果它们被用于矩阵行，则 UART0 和 I2C0 无法同时使用。
         row-gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>,
                     <&gpio0 8 GPIO_ACTIVE_HIGH>,
-                    <&gpio0 17 GPIO_ACTIVE_HIGH>,
-                    <&gpio0 20 GPIO_ACTIVE_HIGH>,
+                    <&gpio0 11 GPIO_ACTIVE_HIGH>,
+                    <&gpio1 0 GPIO_ACTIVE_HIGH>,
                     <&gpio0 22 GPIO_ACTIVE_HIGH>,
                     <&gpio0 24 GPIO_ACTIVE_HIGH>;
 
         /*
          * 列 (Column) 引脚 - 已根据要求修改
-         *
          * 全部指向 I/O 扩展器 (&expander0)
-         * MCP23017 有 16 个引脚 (0-15)，这里使用了 15 个 (0-14)，
-         * 对应您原来的 15 个列定义。
          */
         col-gpios = <&expander0 0 GPIO_ACTIVE_HIGH>,  /* 对应原 &gpio1 0 */
                     <&expander0 1 GPIO_ACTIVE_HIGH>,  /* 对应原 &gpio0 11 */
@@ -53,31 +53,30 @@
 
         // 按行列直通映射，可根据实际键位调整
         map = <
-            RC(0,0)  RC(0,1)  RC(0,2)  RC(0,3)  RC(0,4)  RC(0,5)  RC(0,6)  RC(0,7)  RC(0,8)  RC(0,9)  RC(0,10)  RC(0,11)  RC(0,12)  RC(0,13)  RC(0,14)
-            RC(1,0)  RC(1,1)  RC(1,2)  RC(1,3)  RC(1,4)  RC(1,5)  RC(1,6)  RC(1,7)  RC(1,8)  RC(1,9)  RC(1,10)  RC(1,11)  RC(1,12)  RC(1,13)  RC(1,14)
-            RC(2,0)  RC(2,1)  RC(2,2)  RC(2,3)  RC(2,4)  RC(2,5)  RC(2,6)  RC(2,7)  RC(2,8)  RC(2,9)  RC(2,10)  RC(2,11)  RC(2,12)  RC(2,13)  RC(2,14)
-            RC(3,0)  RC(3,1)  RC(3,2)  RC(3,3)  RC(3,4)  RC(3,5)  RC(3,6)  RC(3,7)  RC(3,8)  RC(3,9)  RC(3,10)  RC(3,11)  RC(3,12)  RC(3,13)  RC(3,14)
-            RC(4,0)  RC(4,1)  RC(4,2)  RC(4,3)  RC(4,4)  RC(4,5)  RC(4,6)  RC(4,7)  RC(4,8)  RC(4,9)  RC(4,10)  RC(4,11)  RC(4,12)  RC(4,13)  RC(4,14)
-            RC(5,0)  RC(5,1)  RC(5,2)  RC(5,3)  RC(5,4)  RC(5,5)  RC(5,6)  RC(5,7)  RC(5,8)  RC(5,9)  RC(5,10)  RC(5,11)  RC(5,12)  RC(5,13)  RC(5,14)
+            RC(0,0)  RC(0,1)  RC(0,2)  RC(0,3)  RC(0,4)  RC(0,5)  RC(0,6)  RC(0,7)  RC(0,8)  RC(0,9)  RC(0,10) RC(0,11) RC(0,12) RC(0,13) RC(0,14)
+            RC(1,0)  RC(1,1)  RC(1,2)  RC(1,3)  RC(1,4)  RC(1,5)  RC(1,6)  RC(1,7)  RC(1,8)  RC(1,9)  RC(1,10) RC(1,11) RC(1,12) RC(1,13) RC(1,14)
+            RC(2,0)  RC(2,1)  RC(2,2)  RC(2,3)  RC(2,4)  RC(2,5)  RC(2,6)  RC(2,7)  RC(2,8)  RC(2,9)  RC(2,10) RC(2,11) RC(2,12) RC(2,13) RC(2,14)
+            RC(3,0)  RC(3,1)  RC(3,2)  RC(3,3)  RC(3,4)  RC(3,5)  RC(3,6)  RC(3,7)  RC(3,8)  RC(3,9)  RC(3,10) RC(3,11) RC(3,12) RC(3,13) RC(3,14)
+            RC(4,0)  RC(4,1)  RC(4,2)  RC(4,3)  RC(4,4)  RC(4,5)  RC(4,6)  RC(4,7)  RC(4,8)  RC(4,9)  RC(4,10) RC(4,11) RC(4,12) RC(4,13) RC(4,14)
+            RC(5,0)  RC(5,1)  RC(5,2)  RC(5,3)  RC(5,4)  RC(5,5)  RC(5,6)  RC(5,7)  RC(5,8)  RC(5,9)  RC(5,10) RC(5,11) RC(5,12) RC(5,13) RC(5,14)
         >;
     };
 };
 
 /*
  * ======================================================================
- * 新增: MCP23017 I/O 扩展器定义 (参考 Ferris 模板)
- *
- * 重要:
- * 1. 您必须在您的主板 .dts 文件中启用一个 I2C 总线 (例如 i2c1)。
- * 2. 这里的 "&i2c1" 和 "0x20" 是假设。
- * - 如果您的扩展器连接到 &i2c0，请修改为 &i2c0。
- * - 如果您的扩展器 I2C 地址不是 0x20，请修改 mcp23017@XX 和 reg = <0xXX>。
+ * 修改: MCP23017 I/O 扩展器定义 (使用 I2C0 总线)
  * ======================================================================
  */
-&i2c1 { // 假设使用 I2C 总线 1
-    status = "okay"; // 确保 I2C 总线本身已被启用
+&i2c0 { // *** 修改为 I2C0，因为您的 pinctrl 仅定义了 i2c0_default ***
+    status = "okay"; // 启用 I2C 总线本身
     clock-frequency = <I2C_BITRATE_FAST>; // 400kHz
 
+    // 引用 pinctrl 定义的引脚配置
+    pinctrl-0 = <&i2c0_default>;
+    pinctrl-1 = <&i2c0_sleep>;
+    pinctrl-names = "default", "sleep";
+    
     expander0: mcp23017@20 { // 定义扩展器，I2C 地址为 0x20
         compatible = "microchip,mcp230xx";
         status = "okay";
@@ -87,3 +86,10 @@
         ngpios = <16>;
     };
 };
+
+// *** 注意事项 ***
+// 您原先的 pinctrl 中：
+// - P0.17 和 P0.20 被用于 I2C0 的 SDA 和 SCL。
+// - 您的 kscan 行引脚中使用了 P0.17 和 P0.20。
+// 这可能会导致引脚冲突！您需要确认这些引脚没有同时被用于矩阵行和 I2C 通信。
+// 如果您的设计确实如此，您可能需要调整 kscan 的 row-gpios，或调整 pinctrl 中 I2C0 的引脚。
